@@ -1,20 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'home.dart';
 import 'plant.dart';
 
-void main() {
-  runApp(const VSUPlantApp());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final seenOnboarding = prefs.getBool('seenOnboarding') ?? false;
+
+  runApp(VSUPlantApp(seenOnboarding: seenOnboarding));
 }
 
 class VSUPlantApp extends StatelessWidget {
-  const VSUPlantApp({super.key});
+  final bool seenOnboarding;
+
+  const VSUPlantApp({super.key, required this.seenOnboarding});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'VSU Plant Identifier',
       debugShowCheckedModeBanner: false,
-      home: const OnboardingScreen(),
+      home: seenOnboarding ? const HomeScreen() : const OnboardingScreen(),
       routes: {
         'home': (context) => const HomeScreen(),
         'plant': (context) => const PlantPage(),
@@ -49,14 +56,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
   ];
 
-  void _handleNext() {
+  void _handleNext() async {
     if (_currentIndex < onboardingData.length - 1) {
       _controller.nextPage(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
     } else {
-      // Navigate to HomeScreen after the last page of onboarding
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('seenOnboarding', true);
       Navigator.pushReplacementNamed(context, 'home');
     }
   }
